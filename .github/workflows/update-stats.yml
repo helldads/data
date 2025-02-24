@@ -1,0 +1,49 @@
+name: Update Stats JSON
+
+on:
+  schedule:
+    - cron: "0 0 * * *"  # Runs daily at midnight UTC
+  workflow_dispatch: {}  # Allows manual triggering
+
+jobs:
+  update-stats:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Fetch Reddit Data
+        id: reddit
+        run: |
+          REDDIT=$(curl -s "https://www.reddit.com/r/HellDads/about.json" | jq '.data.subscribers')
+          echo "subscribers=$REDDIT" >> $GITHUB_OUTPUT
+
+      - name: Fetch Discord Data
+        id: discord
+        run: |
+          DISCORD=$(curl -s "https://discord.com/api/invites/Vhqn7YXnF4?with_counts=true&with_expiration=true" | jq '.approximate_member_count')
+          echo "members=$DISCORD" >> $GITHUB_OUTPUT
+
+      - name: Update stats.json file
+        run: |
+          mkdir -p data
+          cat <<EOF > data/stats.json
+{
+  "reddit": { "subscribers": ${{ steps.reddit.outputs.subscribers }} },
+  "discord": { "approximate_member_count": ${{ steps.discord.outputs.members }} },
+  "lastUpdated": "$(date --utc +'%Y-%m-%dT%H:%M:%SZ')"
+}
+EOF
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add stats.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Update community stats"
+            git push
+          fi
