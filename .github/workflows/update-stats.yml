@@ -13,31 +13,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Debug Reddit Response
-        run: |
-          RESPONSE=$(curl -s \
-                -A "MyRedditApp/0.1 by HellDads" \
-                -H "Accept: application/json" \
-                "https://www.reddit.com/r/HellDads/about.json")
-          echo "Raw Reddit response:"
-          echo "$RESPONSE"
-
-      - name: Fetch Reddit Data
-        id: reddit
-        run: |
-          REDDIT=$(curl -s "https://www.reddit.com/r/HellDads/about.json" | jq '.data.subscribers')
-          echo "subscribers=$REDDIT" >> $GITHUB_OUTPUT
-
       - name: Fetch Discord Data
         id: discord
         run: |
-          DISCORD=$(curl -s  -s -A "Mozilla/5.0 (compatible; GitHubActions)" "https://discord.com/api/invites/Vhqn7YXnF4?with_counts=true&with_expiration=true" | jq '.approximate_member_count')
-          echo "members=$DISCORD" >> $GITHUB_OUTPUT
+          # Fetch the raw JSON response from Discord
+          RESPONSE=$(curl -s "https://discord.com/api/invites/7rbdFMmGCz?with_counts=true&with_expiration=true")
+          echo "Raw Discord response:"
+          echo "$RESPONSE"
+          # Parse the approximate_member_count from the response
+          MEMBERS=$(echo "$RESPONSE" | jq '.approximate_member_count')
+          echo "members=$MEMBERS" >> $GITHUB_OUTPUT
 
       - name: Update stats.json file
         run: |
+          mkdir -p data
           echo '{' > stats.json
-          echo '  "reddit": { "subscribers": '"${{ steps.reddit.outputs.subscribers }}"' },' >> stats.json
           echo '  "discord": { "approximate_member_count": '"${{ steps.discord.outputs.members }}"' },' >> stats.json
           echo '  "lastUpdated": "'"$(date --utc +'%Y-%m-%dT%H:%M:%SZ')"'"' >> stats.json
           echo '}' >> stats.json
@@ -50,6 +40,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "Update community stats [skip ci]"
+            git commit -m "Update Discord stats"
             git push
           fi
