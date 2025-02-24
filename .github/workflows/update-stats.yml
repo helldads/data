@@ -22,7 +22,7 @@ jobs:
       - name: Fetch Discord Data
         id: discord
         run: |
-          DISCORD=$(curl -s "https://discord.com/api/invites/Vhqn7YXnF4?with_counts=true&with_expiration=true" | jq '.approximate_member_count')
+          DISCORD=$(curl -s  -s -A "Mozilla/5.0 (compatible; GitHubActions)" "https://discord.com/api/invites/Vhqn7YXnF4?with_counts=true&with_expiration=true" | jq '.approximate_member_count')
           echo "members=$DISCORD" >> $GITHUB_OUTPUT
 
       - name: Update stats.json file
