@@ -13,6 +13,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Debug Reddit Response
+        run: |
+          RESPONSE=$(curl -s -A "Mozilla/5.0 (compatible; GitHubActions)" "https://www.reddit.com/r/HellDads/about.json")
+          echo "Raw Reddit response:"
+          echo "$RESPONSE"
+
       - name: Fetch Reddit Data
         id: reddit
         run: |
