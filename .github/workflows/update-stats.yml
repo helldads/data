@@ -2,8 +2,8 @@ name: Update Stats JSON
 
 on:
   schedule:
-    - cron: "0 0 * * *"  # Runs daily at midnight UTC
-  workflow_dispatch: {}  # Allows manual triggering
+    - cron: "0 0 * * *" # Runs daily at midnight UTC
+  workflow_dispatch: {} # Allows manual triggering
 
 jobs:
   update-stats:
@@ -27,14 +27,11 @@ jobs:
 
       - name: Update stats.json file
         run: |
-          mkdir -p data
-          cat <<EOF > data/stats.json
-{
-  "reddit": { "subscribers": ${{ steps.reddit.outputs.subscribers }} },
-  "discord": { "approximate_member_count": ${{ steps.discord.outputs.members }} },
-  "lastUpdated": "$(date --utc +'%Y-%m-%dT%H:%M:%SZ')"
-}
-EOF
+          echo '{' > stats.json
+          echo '  "reddit": { "subscribers": '"${{ steps.reddit.outputs.subscribers }}"' },' >> stats.json
+          echo '  "discord": { "approximate_member_count": '"${{ steps.discord.outputs.members }}"' },' >> stats.json
+          echo '  "lastUpdated": "'"$(date --utc +'%Y-%m-%dT%H:%M:%SZ')"'"' >> stats.json
+          echo '}' >> stats.json
 
       - name: Commit and push changes
         run: |
@@ -44,6 +41,6 @@ EOF
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "Update community stats"
+            git commit -m "Update community stats [skip ci]"
             git push
           fi
