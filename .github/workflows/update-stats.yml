@@ -13,6 +13,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Fetch Reddit
+        id: reddit
+        run: |
+          # Fetch the raw JSON response from Discord
+          RESPONSE=$(curl -s "https://www.reddit.com/r/HellDads/")
+          echo "Raw Discord response:"
+          echo "$RESPONSE"
+
       - name: Fetch Discord Data
         id: discord
         run: |
