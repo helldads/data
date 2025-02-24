@@ -15,7 +15,10 @@ jobs:
 
       - name: Debug Reddit Response
         run: |
-          RESPONSE=$(curl -s -A "Mozilla/5.0 (compatible; GitHubActions)" "https://www.reddit.com/r/HellDads/about.json")
+          RESPONSE=$(curl -s \
+                -A "MyRedditApp/0.1 by HellDads" \
+                -H "Accept: application/json" \
+                "https://www.reddit.com/r/HellDads/about.json")
           echo "Raw Reddit response:"
           echo "$RESPONSE"
 
