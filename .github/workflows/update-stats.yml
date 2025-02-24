@@ -1,9 +1,12 @@
-name: Update Stats JSON
+name: Update Stats JSON (Reddit & Discord)
 
 on:
   schedule:
     - cron: "0 0 * * *" # Runs daily at midnight UTC
   workflow_dispatch: {} # Allows manual triggering
+
+permissions:
+  contents: write
 
 jobs:
   update-stats:
@@ -12,31 +15,38 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          persist-credentials: true
 
-      - name: Fetch Reddit
+      - name: Fetch Reddit Data
         id: reddit
         run: |
-          # Fetch the raw JSON response from Discord
-          RESPONSE=$(curl -s "https://www.reddit.com/r/HellDads/")
-          echo "Raw Discord response:"
+          echo "Fetching Reddit data from Cloudflare Worker..."
+          RESPONSE=$(curl -s "https://reddit-fetcher.patres-inferni.workers.dev/")
+          echo "Raw Reddit response:"
           echo "$RESPONSE"
+          # Extract the subscriber count from the JSON response.
+          SUBSCRIBERS=$(echo "$RESPONSE" | jq '.data.subscribers')
+          echo "subscribers=$SUBSCRIBERS" >> $GITHUB_OUTPUT
 
       - name: Fetch Discord Data
         id: discord
         run: |
-          # Fetch the raw JSON response from Discord
-          RESPONSE=$(curl -s "https://discord.com/api/invites/7rbdFMmGCz?with_counts=true&with_expiration=true")
+          echo "Fetching Discord data..."
+          DISCORD_RESPONSE=$(curl -s "https://discord.com/api/invites/Vhqn7YXnF4?with_counts=true&with_expiration=true")
           echo "Raw Discord response:"
-          echo "$RESPONSE"
-          # Parse the approximate_member_count from the response
-          MEMBERS=$(echo "$RESPONSE" | jq '.approximate_member_count')
-          echo "members=$MEMBERS" >> $GITHUB_OUTPUT
+          echo "$DISCORD_RESPONSE"
+          # Extract member count and presence count.
+          MEMBER_COUNT=$(echo "$DISCORD_RESPONSE" | jq '.approximate_member_count')
+          PRESENCE_COUNT=$(echo "$DISCORD_RESPONSE" | jq '.approximate_presence_count')
+          echo "members=$MEMBER_COUNT" >> $GITHUB_OUTPUT
+          echo "presence=$PRESENCE_COUNT" >> $GITHUB_OUTPUT
 
       - name: Update stats.json file
         run: |
-          mkdir -p data
           echo '{' > stats.json
-          echo '  "discord": { "approximate_member_count": '"${{ steps.discord.outputs.members }}"' },' >> stats.json
+          echo '  "reddit": { "subscribers": '"${{ steps.reddit.outputs.subscribers }}"' },' >> stats.json
+          echo '  "discord": { "approximate_member_count": '"${{ steps.discord.outputs.members }}"', "approximate_presence_count": '"${{ steps.discord.outputs.presence }}"' },' >> stats.json
           echo '  "lastUpdated": "'"$(date --utc +'%Y-%m-%dT%H:%M:%SZ')"'"' >> stats.json
           echo '}' >> stats.json
 
@@ -48,6 +58,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "Update Discord stats"
+            git commit -m "Update community stats"
             git push
           fi
