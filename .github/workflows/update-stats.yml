@@ -27,7 +27,9 @@ jobs:
           echo "$RESPONSE"
           # Extract the subscriber count from the JSON response.
           SUBSCRIBERS=$(echo "$RESPONSE" | jq '.data.subscribers')
+          ACTIVE_USER_COUNT=$(echo "$RESPONSE" | jq '.data.active_user_count')
           echo "subscribers=$SUBSCRIBERS" >> $GITHUB_OUTPUT
+          echo "active_user_count=$ACTIVE_USER_COUNT" >> $GITHUB_OUTPUT
 
       - name: Fetch Discord Data
         id: discord
@@ -45,7 +47,7 @@ jobs:
       - name: Update stats.json file
         run: |
           echo '{' > stats.json
-          echo '  "reddit": { "subscribers": '"${{ steps.reddit.outputs.subscribers }}"' },' >> stats.json
+          echo '  "reddit": { "subscribers": '"${{ steps.reddit.outputs.subscribers }}"', "active_user_count": '"${{ steps.reddit.outputs.active_user_count }}"' },' >> stats.json
           echo '  "discord": { "approximate_member_count": '"${{ steps.discord.outputs.members }}"', "approximate_presence_count": '"${{ steps.discord.outputs.presence }}"' },' >> stats.json
           echo '  "lastUpdated": "'"$(date --utc +'%Y-%m-%dT%H:%M:%SZ')"'"' >> stats.json
           echo '}' >> stats.json
