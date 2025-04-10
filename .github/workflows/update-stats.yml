@@ -61,50 +61,40 @@ jobs:
           echo "youtube_subscriber_count=$SUBSCRIBER_COUNT" >> $GITHUB_OUTPUT
           echo "youtube_video_count=$VIDEO_COUNT" >> $GITHUB_OUTPUT
 
-      - name: Load and Validate stats.json file
-        id: load_stats
+      - name: Load stats.json and process values
+        id: load_and_process
         run: |
-          # Load current stats.json file
-          if [ -f stats.json ]; then
-            echo "Found stats.json, loading existing values..."
-            EXISTING_STATS=$(cat stats.json)
+
+          # Validate and set new values or fallback to existing ones
+          if [ -z "${{ steps.reddit.outputs.subscribers }}" ]; then
+            REDDIT_SUBSCRIBERS=$(jq -r '.reddit.subscribers' stats.json)
           else
-            echo "No existing stats.json found, initializing with empty values..."
-            EXISTING_STATS='{}'
+            REDDIT_SUBSCRIBERS="${{ steps.reddit.outputs.subscribers }}"
           fi
-          echo "Existing stats: $EXISTING_STATS"
-          echo "EXISTING_STATS=$EXISTING_STATS" >> $GITHUB_ENV
-
-      - name: Update stats.json file with fallback logic
-        run: |
-          echo "Validating and updating stats..."
-
-          # Extract existing values or use new values if available
-          REDDIT_SUBSCRIBERS="${{ steps.reddit.outputs.subscribers }}"
-          REDDIT_ACTIVE_USER_COUNT="${{ steps.reddit.outputs.active_user_count }}"
-          DISCORD_MEMBERS="${{ steps.discord.outputs.members }}"
-          DISCORD_PRESENCE="${{ steps.discord.outputs.presence }}"
-          YOUTUBE_SUBSCRIBER_COUNT="${{ steps.youtube.outputs.youtube_subscriber_count }}"
-          YOUTUBE_VIDEO_COUNT="${{ steps.youtube.outputs.youtube_video_count }}"
-
-          # Check for missing values and fall back to existing data
-          if [ -z "$REDDIT_SUBSCRIBERS" ]; then
-            REDDIT_SUBSCRIBERS=$(echo "$EXISTING_STATS" | jq -r '.reddit.subscribers')
+          if [ -z "${{ steps.reddit.outputs.active_user_count }}" ]; then
+            REDDIT_ACTIVE_USER_COUNT=$(jq -r '.reddit.active_user_count' stats.json)
+          else
+            REDDIT_ACTIVE_USER_COUNT="${{ steps.reddit.outputs.active_user_count }}"
           fi
-          if [ -z "$REDDIT_ACTIVE_USER_COUNT" ]; then
-            REDDIT_ACTIVE_USER_COUNT=$(echo "$EXISTING_STATS" | jq -r '.reddit.active_user_count')
+          if [ -z "${{ steps.discord.outputs.members }}" ]; then
+            DISCORD_MEMBERS=$(jq -r '.discord.approximate_member_count' stats.json)
+          else
+            DISCORD_MEMBERS="${{ steps.discord.outputs.members }}"
           fi
-          if [ -z "$DISCORD_MEMBERS" ]; then
-            DISCORD_MEMBERS=$(echo "$EXISTING_STATS" | jq -r '.discord.approximate_member_count')
+          if [ -z "${{ steps.discord.outputs.presence }}" ]; then
+            DISCORD_PRESENCE=$(jq -r '.discord.approximate_presence_count' stats.json)
+          else
+            DISCORD_PRESENCE="${{ steps.discord.outputs.presence }}"
           fi
-          if [ -z "$DISCORD_PRESENCE" ]; then
-            DISCORD_PRESENCE=$(echo "$EXISTING_STATS" | jq -r '.discord.approximate_presence_count')
+          if [ -z "${{ steps.youtube.outputs.youtube_subscriber_count }}" ]; then
+            YOUTUBE_SUBSCRIBER_COUNT=$(jq -r '.youtube.subscriber_count' stats.json)
+          else
+            YOUTUBE_SUBSCRIBER_COUNT="${{ steps.youtube.outputs.youtube_subscriber_count }}"
           fi
-          if [ -z "$YOUTUBE_SUBSCRIBER_COUNT" ]; then
-            YOUTUBE_SUBSCRIBER_COUNT=$(echo "$EXISTING_STATS" | jq -r '.youtube.subscriber_count')
-          fi
-          if [ -z "$YOUTUBE_VIDEO_COUNT" ]; then
-            YOUTUBE_VIDEO_COUNT=$(echo "$EXISTING_STATS" | jq -r '.youtube.video_count')
+          if [ -z "${{ steps.youtube.outputs.youtube_video_count }}" ]; then
+            YOUTUBE_VIDEO_COUNT=$(jq -r '.youtube.video_count' stats.json)
+          else
+            YOUTUBE_VIDEO_COUNT="${{ steps.youtube.outputs.youtube_video_count }}"
           fi
 
           # Write the updated stats.json file with fallback values
