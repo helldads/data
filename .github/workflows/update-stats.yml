@@ -1,4 +1,4 @@
-name: Update Stats JSON (Reddit & Discord)
+name: Update Stats JSON (Reddit, Discord, YouTube)
 
 on:
   schedule:
@@ -44,11 +44,74 @@ jobs:
           echo "members=$MEMBER_COUNT" >> $GITHUB_OUTPUT
           echo "presence=$PRESENCE_COUNT" >> $GITHUB_OUTPUT
 
-      - name: Update stats.json file
+      - name: Fetch YouTube Data
+        id: youtube
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          YOUTUBE_CHANNEL_ID: ${{ secrets.YOUTUBE_CHANNEL_ID }} # Replace with your YouTube channel ID
         run: |
+          echo "Fetching YouTube data..."
+          # YouTube API call to get channel stats
+          RESPONSE=$(curl -s "https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${YOUTUBE_CHANNEL_ID}&key=${YOUTUBE_API_KEY}")
+          echo "Raw YouTube response:"
+          echo "$RESPONSE"
+          # Extract subscriber count and video count
+          SUBSCRIBER_COUNT=$(echo "$RESPONSE" | jq '.items[0].statistics.subscriberCount')
+          VIDEO_COUNT=$(echo "$RESPONSE" | jq '.items[0].statistics.videoCount')
+          echo "youtube_subscriber_count=$SUBSCRIBER_COUNT" >> $GITHUB_OUTPUT
+          echo "youtube_video_count=$VIDEO_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Load and Validate stats.json file
+        id: load_stats
+        run: |
+          # Load current stats.json file
+          if [ -f stats.json ]; then
+            echo "Found stats.json, loading existing values..."
+            EXISTING_STATS=$(cat stats.json)
+          else
+            echo "No existing stats.json found, initializing with empty values..."
+            EXISTING_STATS='{}'
+          fi
+          echo "Existing stats: $EXISTING_STATS"
+          echo "EXISTING_STATS=$EXISTING_STATS" >> $GITHUB_ENV
+
+      - name: Update stats.json file with fallback logic
+        run: |
+          echo "Validating and updating stats..."
+
+          # Extract existing values or use new values if available
+          REDDIT_SUBSCRIBERS="${{ steps.reddit.outputs.subscribers }}"
+          REDDIT_ACTIVE_USER_COUNT="${{ steps.reddit.outputs.active_user_count }}"
+          DISCORD_MEMBERS="${{ steps.discord.outputs.members }}"
+          DISCORD_PRESENCE="${{ steps.discord.outputs.presence }}"
+          YOUTUBE_SUBSCRIBER_COUNT="${{ steps.youtube.outputs.youtube_subscriber_count }}"
+          YOUTUBE_VIDEO_COUNT="${{ steps.youtube.outputs.youtube_video_count }}"
+
+          # Check for missing values and fall back to existing data
+          if [ -z "$REDDIT_SUBSCRIBERS" ]; then
+            REDDIT_SUBSCRIBERS=$(echo "$EXISTING_STATS" | jq -r '.reddit.subscribers')
+          fi
+          if [ -z "$REDDIT_ACTIVE_USER_COUNT" ]; then
+            REDDIT_ACTIVE_USER_COUNT=$(echo "$EXISTING_STATS" | jq -r '.reddit.active_user_count')
+          fi
+          if [ -z "$DISCORD_MEMBERS" ]; then
+            DISCORD_MEMBERS=$(echo "$EXISTING_STATS" | jq -r '.discord.approximate_member_count')
+          fi
+          if [ -z "$DISCORD_PRESENCE" ]; then
+            DISCORD_PRESENCE=$(echo "$EXISTING_STATS" | jq -r '.discord.approximate_presence_count')
+          fi
+          if [ -z "$YOUTUBE_SUBSCRIBER_COUNT" ]; then
+            YOUTUBE_SUBSCRIBER_COUNT=$(echo "$EXISTING_STATS" | jq -r '.youtube.subscriber_count')
+          fi
+          if [ -z "$YOUTUBE_VIDEO_COUNT" ]; then
+            YOUTUBE_VIDEO_COUNT=$(echo "$EXISTING_STATS" | jq -r '.youtube.video_count')
+          fi
+
+          # Write the updated stats.json file with fallback values
           echo '{' > stats.json
-          echo '  "reddit": { "subscribers": '"${{ steps.reddit.outputs.subscribers }}"', "active_user_count": '"${{ steps.reddit.outputs.active_user_count }}"' },' >> stats.json
-          echo '  "discord": { "approximate_member_count": '"${{ steps.discord.outputs.members }}"', "approximate_presence_count": '"${{ steps.discord.outputs.presence }}"' },' >> stats.json
+          echo '  "reddit": { "subscribers": '"$REDDIT_SUBSCRIBERS"', "active_user_count": '"$REDDIT_ACTIVE_USER_COUNT"' },' >> stats.json
+          echo '  "discord": { "approximate_member_count": '"$DISCORD_MEMBERS"', "approximate_presence_count": '"$DISCORD_PRESENCE"' },' >> stats.json
+          echo '  "youtube": { "subscriber_count": '"$YOUTUBE_SUBSCRIBER_COUNT"', "video_count": '"$YOUTUBE_VIDEO_COUNT"' },' >> stats.json
           echo '  "lastUpdated": "'"$(date --utc +'%Y-%m-%dT%H:%M:%SZ')"'"' >> stats.json
           echo '}' >> stats.json
 
