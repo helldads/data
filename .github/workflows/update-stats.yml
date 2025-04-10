@@ -35,7 +35,7 @@ jobs:
         id: discord
         run: |
           echo "Fetching Discord data..."
-          DISCORD_RESPONSE=$(curl -s "https://discord.com/api/invites/zJZPqnbKKw?with_counts=true&with_expiration=true")
+          DISCORD_RESPONSE=$(curl -s "https://discord.com/api/invites/helldads?with_counts=true&with_expiration=true")
           echo "Raw Discord response:"
           echo "$DISCORD_RESPONSE"
           # Extract member count and presence count.
