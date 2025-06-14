@@ -1,4 +1,4 @@
-name: Update Stats JSON (Reddit, Discord, YouTube)
+name: Update Stats JSON (Reddit, Discord, TikTok, YouTube)
 
 on:
   schedule:
