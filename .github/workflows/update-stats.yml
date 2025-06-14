@@ -44,6 +44,26 @@ jobs:
           echo "members=$MEMBER_COUNT" >> $GITHUB_OUTPUT
           echo "presence=$PRESENCE_COUNT" >> $GITHUB_OUTPUT
 
+      - name: Fetch TikTok Data
+        id: tiktok
+        run: |
+          echo "Fetching TikTok page..."
+          TIKTOK_RESPONSE=$(curl -s "https://www.tiktok.com/@helldads")
+          echo "Raw Tiktok response:"
+          echo "$TIKTOK_RESPONSE"
+
+          echo "Extracting stats JSON..."
+          STATS_JSON=$(echo "$TIKTOK_RESPONSE" | grep -oP '"stats":\s*{\K[^}]+(?=})' | head -n1)
+          STATS_JSON="{\"stats\":{$STATS_JSON}}"
+
+          echo "Raw extracted stats:"
+          echo "$STATS_JSON" | jq
+
+          FOLLOWER_COUNT=$(echo "$STATS_JSON" | jq '.stats.followerCount')
+          VIDEO_COUNT=$(echo "$STATS_JSON" | jq '.stats.videoCount')
+          echo "follower_count=$FOLLOWER_COUNT" >> $GITHUB_OUTPUT
+          echo "video_count=$VIDEO_COUNT" >> $GITHUB_OUTPUT
+
       - name: Fetch YouTube Data
         id: youtube
         env:
@@ -86,6 +106,17 @@ jobs:
           else
             DISCORD_PRESENCE="${{ steps.discord.outputs.presence }}"
           fi
+
+          if [ -z "${{ steps.tiktok.outputs.follower_count }}" ]; then
+            TIKTOK_FOLLOWER_COUNT=$(jq -r '.tiktok.follower_count' stats.json)
+          else
+            TIKTOK_FOLLOWER_COUNT="${{ steps.tiktok.outputs.follower_count }}"
+          fi
+          if [ -z "${{ steps.tiktok.outputs.video_count }}" ]; then
+            TIKTOK_VIDEO_COUNT=$(jq -r '.tiktok.video_count' stats.json)
+          else
+            TIKTOK_VIDEO_COUNT="${{ steps.tiktok.outputs.video_count }}"
+          fi
           if [ -z "${{ steps.youtube.outputs.youtube_subscriber_count }}" ]; then
             YOUTUBE_SUBSCRIBER_COUNT=$(jq -r '.youtube.subscriber_count' stats.json)
           else
@@ -101,6 +132,7 @@ jobs:
           echo '{' > stats.json
           echo '  "reddit": { "subscribers": '"$REDDIT_SUBSCRIBERS"', "active_user_count": '"$REDDIT_ACTIVE_USER_COUNT"' },' >> stats.json
           echo '  "discord": { "approximate_member_count": '"$DISCORD_MEMBERS"', "approximate_presence_count": '"$DISCORD_PRESENCE"' },' >> stats.json
+          echo '  "tiktok": { "follower_count": '"$TIKTOK_FOLLOWER_COUNT"', "video_count": '"$TIKTOK_VIDEO_COUNT"' },' >> stats.json
           echo '  "youtube": { "subscriber_count": '"$YOUTUBE_SUBSCRIBER_COUNT"', "video_count": '"$YOUTUBE_VIDEO_COUNT"' },' >> stats.json
           echo '  "lastUpdated": "'"$(date --utc +'%Y-%m-%dT%H:%M:%SZ')"'"' >> stats.json
           echo '}' >> stats.json
