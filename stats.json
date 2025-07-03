@@ -1,7 +1,7 @@
 {
-  "reddit": { "subscribers": 6071, "active_user_count": 6 },
-  "discord": { "approximate_member_count": 1265, "approximate_presence_count": 252 },
-  "tiktok": { "follower_count": 1457, "video_count": 122 },
+  "reddit": { "subscribers": 6076, "active_user_count": 1 },
+  "discord": { "approximate_member_count": 1264, "approximate_presence_count": 276 },
+  "tiktok": { "follower_count": 1459, "video_count": 122 },
   "youtube": { "subscriber_count": 467, "video_count": 127 },
-  "lastUpdated": "2025-07-03T16:22:52Z"
+  "lastUpdated": "2025-07-03T20:19:48Z"
 }
