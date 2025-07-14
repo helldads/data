@@ -19,11 +19,11 @@ jobs:
       - name: Fetch quotes.js from helldads repo
         run: |
           mkdir -p tmp
-          curl -s https://raw.githubusercontent.com/helldads/discord/refs/heads/main/.dadbot/src/data/quotes.js -o tmp/quotes.js
+          curl -s https://raw.githubusercontent.com/helldads/discord/refs/heads/main/.dadbot/src/data/quotes.js -o tmp/quotes.mjs
 
       - name: Pick random quote
         run: |
-          echo 'import { quotesByAuthor } from "./quotes.js" with { type: "module" };' > ./tmp/script.mjs
+          echo 'import { quotesByAuthor } from "./quotes.mjs"' > ./tmp/script.mjs
           echo 'const fs = await import("fs/promises");' >> ./tmp/script.mjs
           echo 'const authors = Object.keys(quotesByAuthor);' >> ./tmp/script.mjs
           echo 'const author = authors[Math.floor(Math.random() * authors.length)];' >> ./tmp/script.mjs
