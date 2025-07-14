@@ -24,9 +24,9 @@ jobs:
             const authors = Object.keys(data);
             const author = authors[Math.floor(Math.random() * authors.length)];
             const quotes = data[author];
-            const quote = quotes[Math.floor(Math.random() * quotes.length)];
-            if (quote) {
-              const output = { author, quote };
+            const text = quotes[Math.floor(Math.random() * quotes.length)];
+            if (text) {
+              const output = { author, text };
               fs.writeFileSync("quotes/daily.json", JSON.stringify(output, null, 2));
             } else {
               console.error("No quote found. Skipping.");
