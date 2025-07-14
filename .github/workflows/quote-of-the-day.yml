@@ -23,16 +23,19 @@ jobs:
             const data = JSON.parse(fs.readFileSync("quotes/all.json", "utf8"));
             const authors = Object.keys(data);
             const author = authors[Math.floor(Math.random() * authors.length)];
-            const quote = data[author][Math.floor(Math.random() * data[author].length)];
-            if(quote.length){
-              const output = `export const quoteOfTheDay = {\n  author: ${JSON.stringify(author)},\n  quote: ${JSON.stringify(quote)}\n};\n`;
-              fs.writeFileSync("quotes/daily.js", output);
+            const quotes = data[author];
+            const quote = quotes[Math.floor(Math.random() * quotes.length)];
+            if (quote) {
+              const output = { author, quote };
+              fs.writeFileSync("quotes/daily.json", JSON.stringify(output, null, 2));
+            } else {
+              console.error("No quote found. Skipping.");
             }
           '
 
       - name: Commit and push if changed
         run: |
-          if git diff --quiet quotes/daily.js; then
+          if git diff --quiet quotes/daily.json; then
             echo "No changes to commit."
           else
             git config --global user.name "github-actions[bot]"
