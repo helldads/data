@@ -16,36 +16,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Fetch quotes.js from helldads repo
-        run: |
-          mkdir -p tmp
-          curl -s https://raw.githubusercontent.com/helldads/discord/refs/heads/main/.dadbot/src/data/quotes.js -o tmp/quotes.mjs
-
       - name: Pick random quote
         run: |
-          echo 'import { quotesByAuthor } from "./quotes.mjs"' > ./tmp/script.mjs
-          echo 'const fs = await import("fs/promises");' >> ./tmp/script.mjs
-          echo 'const authors = Object.keys(quotesByAuthor);' >> ./tmp/script.mjs
-          echo 'const author = authors[Math.floor(Math.random() * authors.length)];' >> ./tmp/script.mjs
-          echo 'const quote = quotesByAuthor[author][Math.floor(Math.random() * quotesByAuthor[author].length)];' >> ./tmp/script.mjs
-          echo 'await fs.writeFile("quote-of-the-day.json", JSON.stringify({ author, quote }, null, 2));' >> ./tmp/script.mjs
-          node ./tmp/script.mjs
+          node -e '
+            const fs = require("fs");
+            const data = JSON.parse(fs.readFileSync("quotes/all.json", "utf8"));
+            const authors = Object.keys(data);
+            const author = authors[Math.floor(Math.random() * authors.length)];
+            const quote = data[author][Math.floor(Math.random() * data[author].length)];
+            if(quote.length){
+              const output = `export const quoteOfTheDay = {\n  author: ${JSON.stringify(author)},\n  quote: ${JSON.stringify(quote)}\n};\n`;
+              fs.writeFileSync("quotes/daily.js", output);
+            }
+          '
 
       - name: Commit and push if changed
         run: |
-          if [ -f quote-of-the-day.json ]; then
-            author=$(jq -r '.author' quote-of-the-day.json)
-            quote=$(jq -r '.quote' quote-of-the-day.json)
-
-            if [ -n "$author" ] && [ -n "$quote" ] && [ "$author" != "null" ] && [ "$quote" != "null" ]; then
-              git config --global user.name "github-actions[bot]"
-              git config --global user.email "github-actions[bot]@users.noreply.github.com"
-              git add quote-of-the-day.json
-              git commit -m "chore: update quote of the day" || echo "No changes to commit"
-              git push
-            else
-              echo "Invalid quote.json: missing author or quote"
-            fi
+          if git diff --quiet quotes/daily.js; then
+            echo "No changes to commit."
           else
-            echo "quote-of-the-day.json does not exist"
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            git add quotes/daily.js
+            git commit -m "chore: update quote of the day"
+            git push
           fi
