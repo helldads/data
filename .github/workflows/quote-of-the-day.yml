@@ -23,7 +23,7 @@ jobs:
 
       - name: Pick random quote
         run: |
-          echo 'import { quotesByAuthor } from "./tmp/quotes.js" assert { type: "javascript" };' > ./tmp/script.mjs
+          echo 'import { quotesByAuthor } from "./quotes.js" assert { type: "javascript" };' > ./tmp/script.mjs
           echo 'const fs = await import("fs/promises");' >> ./tmp/script.mjs
           echo 'const authors = Object.keys(quotesByAuthor);' >> ./tmp/script.mjs
           echo 'const author = authors[Math.floor(Math.random() * authors.length)];' >> ./tmp/script.mjs
