@@ -1,0 +1,51 @@
+name: Quote of the Day
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # every day at 06:00 UTC
+  workflow_dispatch: {} # Allows manual triggering
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-quote:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch quotes.js from helldads repo
+        run: |
+          mkdir -p tmp
+          curl -s https://raw.githubusercontent.com/helldads/discord/refs/heads/main/.dadbot/src/data/quotes.js -o tmp/quotes.js
+
+      - name: Pick random quote
+        run: |
+          echo 'import { quotesByAuthor } from "./tmp/quotes.js" assert { type: "javascript" };' > ./tmp/script.mjs
+          echo 'const fs = await import("fs/promises");' >> ./tmp/script.mjs
+          echo 'const authors = Object.keys(quotesByAuthor);' >> ./tmp/script.mjs
+          echo 'const author = authors[Math.floor(Math.random() * authors.length)];' >> ./tmp/script.mjs
+          echo 'const quote = quotesByAuthor[author][Math.floor(Math.random() * quotesByAuthor[author].length)];' >> ./tmp/script.mjs
+          echo 'await fs.writeFile("quote-of-the-day.json", JSON.stringify({ author, quote }, null, 2));' >> ./tmp/script.mjs
+          node ./tmp/script.mjs
+
+      - name: Commit and push if changed
+        run: |
+          if [ -f quote-of-the-day.json ]; then
+            author=$(jq -r '.author' quote-of-the-day.json)
+            quote=$(jq -r '.quote' quote-of-the-day.json)
+
+            if [ -n "$author" ] && [ -n "$quote" ] && [ "$author" != "null" ] && [ "$quote" != "null" ]; then
+              git config --global user.name "github-actions[bot]"
+              git config --global user.email "github-actions[bot]@users.noreply.github.com"
+              git add quote-of-the-day.json
+              git commit -m "chore: update quote of the day" || echo "No changes to commit"
+              git push
+            else
+              echo "Invalid quote.json: missing author or quote"
+            fi
+          else
+            echo "quote-of-the-day.json does not exist"
+          fi
