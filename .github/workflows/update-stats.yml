@@ -27,9 +27,7 @@ jobs:
           echo "$RESPONSE"
           # Extract the subscriber count from the JSON response.
           SUBSCRIBERS=$(echo "$RESPONSE" | jq '.data.subscribers')
-          ACTIVE_USER_COUNT=$(echo "$RESPONSE" | jq '.data.active_user_count')
           echo "subscribers=$SUBSCRIBERS" >> $GITHUB_OUTPUT
-          echo "active_user_count=$ACTIVE_USER_COUNT" >> $GITHUB_OUTPUT
 
       - name: Fetch Discord Data
         id: discord
@@ -91,11 +89,6 @@ jobs:
           else
             REDDIT_SUBSCRIBERS="${{ steps.reddit.outputs.subscribers }}"
           fi
-          if [ -z "${{ steps.reddit.outputs.active_user_count }}" ]; then
-            REDDIT_ACTIVE_USER_COUNT=$(jq -r '.reddit.active_user_count' stats.json)
-          else
-            REDDIT_ACTIVE_USER_COUNT="${{ steps.reddit.outputs.active_user_count }}"
-          fi
           if [ -z "${{ steps.discord.outputs.members }}" ]; then
             DISCORD_MEMBERS=$(jq -r '.discord.approximate_member_count' stats.json)
           else
@@ -130,7 +123,7 @@ jobs:
 
           # Write the updated stats.json file with fallback values
           echo '{' > stats.json
-          echo '  "reddit": { "subscribers": '"$REDDIT_SUBSCRIBERS"', "active_user_count": '"$REDDIT_ACTIVE_USER_COUNT"' },' >> stats.json
+          echo '  "reddit": { "subscribers": '"$REDDIT_SUBSCRIBERS"' },' >> stats.json
           echo '  "discord": { "approximate_member_count": '"$DISCORD_MEMBERS"', "approximate_presence_count": '"$DISCORD_PRESENCE"' },' >> stats.json
           echo '  "tiktok": { "follower_count": '"$TIKTOK_FOLLOWER_COUNT"', "video_count": '"$TIKTOK_VIDEO_COUNT"' },' >> stats.json
           echo '  "youtube": { "subscriber_count": '"$YOUTUBE_SUBSCRIBER_COUNT"', "video_count": '"$YOUTUBE_VIDEO_COUNT"' },' >> stats.json
